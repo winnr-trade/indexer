@@ -41,7 +41,7 @@ export function postgresDatabase(connectionString: string): PostgresDatabase {
   };
 }
 
-export function getDefaultDatabase(): Database<unknown> {
+export function getDefaultDatabase() {
   if (databaseUrl === undefined) {
     throw new IndexerConfigError("DATABASE_URL env var not set");
   }

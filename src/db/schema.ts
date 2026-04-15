@@ -4,11 +4,13 @@ import {
   bigint, 
   integer,
   pgEnum,
-  serial
+  serial,
+  jsonb
 } from 'drizzle-orm/pg-core';
 
-export const marketStatusEnum = pgEnum('market_status', ['Active', 'Halted', 'ResolutionPending', 'Resolved']);
-export const marketOutcomeEnum = pgEnum('market_outcome', ['Yes', 'No']);
+export const marketStatusEnum = pgEnum('market_status', ['active', 'halted', 'resolution_pending', 'resolved']);
+export const marketOutcomeEnum = pgEnum('market_outcome', ['yes', 'no']);
+export const resolverTypeEnum = pgEnum('resolver_type', ['address', 'pyth', 'optimistic']);
 
 export const markets = pgTable('markets', {
   id: bigint('id', { mode: 'number' }).primaryKey(),
@@ -16,9 +18,12 @@ export const markets = pgTable('markets', {
   creator: text('creator').notNull(),
   collateralToken: text('collateral_token').notNull(),
   resolutionTime: bigint('resolution_time', { mode: 'number' }).notNull(),
-  resolver: text('resolver').notNull(),
-  status: marketStatusEnum('status').default('Active').notNull(),
+  resolverType: resolverTypeEnum('resolver_type').notNull(),
+  resolverConfig: jsonb('resolver_config').$type<Record<string, unknown>>().default({}).notNull(),
+  status: marketStatusEnum('status').default('active').notNull(),
   outcome: marketOutcomeEnum('outcome'),
+  totalYesShares: bigint('total_yes_shares', { mode: 'number' }).default(0).notNull(),
+  totalNoShares: bigint('total_no_shares', { mode: 'number' }).default(0).notNull(),
   volume: bigint('volume', { mode: 'number' }).default(0).notNull(),
   createdAt: bigint('created_at', { mode: 'number' }).notNull(),
   eventNumber: integer('event_number').notNull(),
