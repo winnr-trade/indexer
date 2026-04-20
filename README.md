@@ -1,140 +1,50 @@
-# @sovereign-sdk/indexer
+# winnr.trade Indexer
 
-An extendable indexer for Sovereign SDK rollups written in TypeScript.
+This monorepo powers the core indexing infrastructure and data querying API for the Winnr prediction market platform. It is built using Bun Workspaces, Turborepo, Drizzle ORM, and PostgreSQL.
 
-## Running
+## Architecture
 
-With your database accessible & rollup running the indexer can be started like so:
+The project is split into independent workspaces:
 
+* **`@winnr-trade/service`** (`/service`)
+  A persistent background worker (daemon) that subscribes to on-chain Rollup events. It processes state transitions (like market creations, orderbook updates, and trades) and synchronizes them to the database.
+* **`@winnr-trade/api`** (`/api`)
+  A lightweight Hono.js REST API providing fast, read-only HTTP endpoints for consumers to query market statuses, price probability charts, and historical trades.
+* **`@winnr-trade/common`** (`/common`)
+  The shared backbone containing database schemas, TypeScript definitions, logging factories, and utility functions decoupled across the stack.
+
+## Development
+
+### 1. Installation
+Install all workspace dependencies from the project root:
 ```bash
-DATABASE_URL="postgres://YOUR_DB_STRING" npx @sovereign-sdk/indexer --rollup-url http://localhost:12346
+bun install
 ```
 
-## Database Setup
-
-The indexer now uses **Drizzle ORM** for its schema. To setup your tables automatically, simply push the schema to your database:
-
+### 2. Database Setup
+Make sure you have variables specified in a root `.env` files, then prepare the schema:
 ```bash
+# Drops all tables completely to give you a clean slate
+bun run db:reset
+
+# Pushes the latest @winnr-trade/common drizzle schema to Postgres
 bun run db:push
 ```
 
-This will create necessary tables including `markets`, `indexer_state`, and `book_updates`.
-
-#### Local development
-
-For local development of your rollup+application you might want to have the indexer run against a local postgres database, the following section provides instructions on how to do this.
-
-#### Prerequisites
-
-- Docker installed on your system
-- Docker daemon running
-
-#### Setup Steps
-
-1. Pull the official Postgres Docker image:
-
+### 3. Local Development
+Run the full monorepo concurrently via Turborepo:
 ```bash
-docker pull postgres
+bun dev
 ```
 
-2. Create and start a Postgres container:
-
+Or you can run the individual services in isolation:
 ```bash
-docker run --name sov-indexer-db \
-  -e POSTGRES_PASSWORD=admin123 \
-  -d \
-  -p 5432:5432 \
-  postgres
+bun dev:api
+bun dev:service
 ```
 
-> **Note**: If you change the password, make sure to update it in the `dev` npm script connection string as well.
-
-3. Verify the container is running:
-
+### 4. Build
+To compile executable binaries (`/bin/indexer` and `/bin/api-server`):
 ```bash
-docker ps
+bun run build
 ```
-
-4. If you need to start an existing container later:
-
-```bash
-docker start sov-indexer-db
-```
-
-6. Initialize the database schema:
-
-```bash
-bun run db:push
-```
-
-### Connection Details
-
-- Host: `localhost`
-- Port: `5432`
-- Username: `postgres`
-- Password: `admin123`
-- Database: `postgres`
-
-### Useful Docker Commands
-
-Stop the container:
-
-```bash
-docker stop sov-indexer-db
-```
-
-Remove the container (will delete all data):
-
-```bash
-docker rm sov-indexer-db
-```
-
-View container logs:
-
-```bash
-docker logs sov-indexer-db
-```
-
-## API Layer
-
-The indexer includes a high-performance **Hono API** that serves read-only queries against the database (optimized for Edge runtimes like Bun). You can run this alongside the indexer without blocking the ingestion pipeline.
-
-To start the API on `http://localhost:3000`:
-```bash
-bun run dev:api
-```
-
-*(You can run `bun run dev` in one terminal for ingestion, and `bun run dev:api` in another for serving reads).*
-
-### API Routes
-
-#### 1. List Markets
-`GET /api/v1/markets`
-
-Returns the most recently created prediction markets.
-
-**Query Parameters:**
-- `status` (Optional): Filter by `Active`, `Halted`, `ResolutionPending`, or `Resolved`.
-- `limit` (Optional): Maximum number of records to return (default: 50, max: 100).
-
-#### 2. Get Single Market
-`GET /api/v1/markets/:id`
-
-Returns the exact market schema for the ID provided. Returns `404` if not found.
-
-#### 3. Chart Data (Time Series)
-`GET /api/v1/markets/:id/chart?resolution={bucket}`
-
-Generates continuous line-graph probability data (`time` and `price`) on the fly from the `book_updates` table using native Postgres aggregations.
-
-**Query Parameters:**
-- `resolution`: The bucketing timeframe (`1m`, `15m`, `1h`, `1d`, `1w`). Defaults to `1h`.
-- `limit`: Number of historical data points to return.
-
-#### 4. Recent Trades
-`GET /api/v1/markets/:id/trades`
-
-Returns the most recent chronological trades executed on the market. Contains exact pricing, quantities, and order details.
-
-**Query Parameters:**
-- `limit` (Optional): Maximum number of trades to return (default: 50, max: 500).
