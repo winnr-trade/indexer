@@ -1,9 +1,9 @@
 import { Rollup, SovereignClient } from "@sovereign-sdk/web3";
-import { rollupApi } from "../config/env";
+import { env } from "./configs/env";
 
 export const rollup = new Rollup(
   {
-    client: new SovereignClient.SovereignSDK({ baseURL: rollupApi }),
+    client: new SovereignClient.SovereignSDK({ baseURL: env.rollupApiUrl }),
     // biome-ignore lint/suspicious/noExplicitAny: types arent used
     serializer: {} as any,
     context: {},

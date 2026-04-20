@@ -1,9 +1,7 @@
 import { drizzle, NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-import { IndexerConfigError } from "../errors";
 import { indexerState } from "../db/schema";
 import { eq } from "drizzle-orm";
-import { databaseUrl } from "../config/env";
 
 export type EventSchema = {
   number: number;
@@ -40,13 +38,3 @@ export function postgresDatabase(connectionString: string): PostgresDatabase {
     },
   };
 }
-
-export function getDefaultDatabase() {
-  if (databaseUrl === undefined) {
-    throw new IndexerConfigError("DATABASE_URL env var not set");
-  }
-
-  return postgresDatabase(databaseUrl);
-}
-
-export const db = getDefaultDatabase();

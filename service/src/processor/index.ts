@@ -1,10 +1,10 @@
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { EventSchema } from '../db';
+import { EventSchema } from '@winnr-trade/common';
 import { processMarketEvents } from './market';
 import { processOrderbookEvents } from './orderbook';
 import { processTradeEvents } from './trades';
-import logger from '../../utils/logger';
-import { indexerState } from '../../db/schema';
+import { logger } from '../logger';
+import { indexerState } from '@winnr-trade/common';
 
 export class EventProcessor {
   constructor(private readonly db: NodePgDatabase) {}

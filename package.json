@@ -1,45 +1,31 @@
 {
   "name": "indexer",
-  "version": "0.4.21",
-  "description": "A simple indexer",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "bun@1.3.6",
+  "workspaces": [
+    "common",
+    "api",
+    "service"
+  ],
   "scripts": {
-    "build": "bun build ./src/index.ts --compile --outfile bin/indexer",
-    "cli": "bun run build && ./bin/indexer",
-    "dev": "bun run ./src/index.ts",
-    "dev:api": "bun run ./src/api/index.ts",
-    "db:push": "drizzle-kit push",
-    "db:reset": "bun run ./src/scripts/reset.ts",
-    "db:generate": "drizzle-kit generate",
-    "ci": "biome ci",
-    "fix": "biome check --write",
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "dev:api": "turbo run dev --filter=@winnr-trade/api",
+    "dev:service": "turbo run dev --filter=@winnr-trade/service",
     "lint": "biome lint",
+    "fix": "biome check --write",
+    "db:push": "turbo run db:push",
+    "db:generate": "turbo run db:generate",
+    "db:reset": "bun run ./scripts/reset.ts",
     "test:integration": "bun test"
-  },
-  "bin": {
-    "indexer": "./bin/indexer"
-  },
-  "files": ["package.json", "bin"],
-  "dependencies": {
-    "@sovereign-sdk/web3": "^0.13.1",
-    "dotenv": "^17.4.1",
-    "drizzle-orm": "^0.45.2",
-    "hono": "^4.6.0",
-    "pg": "^8.20.0",
-    "winston": "3",
-    "yargs": "^17.7.2",
-    "zod": "^3.23.0",
-    "@hono/zod-validator": "^0.4.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.11",
-    "@testcontainers/postgresql": "^10.24.2",
-    "@types/bun": "^1.3.11",
-    "@types/pg": "^8.20.0",
-    "@types/yargs": "^17.0.33",
     "bun": "^1.0.0",
-    "drizzle-kit": "^0.31.10",
-    "testcontainers": "^10.24.2",
-    "tsx": "^4.21.0",
+    "drizzle-orm": "^0.45.2",
+    "@winnr-trade/common": "workspace:*",
+    "turbo": "^2.0.0",
     "typescript": "^6.0.2"
   }
 }

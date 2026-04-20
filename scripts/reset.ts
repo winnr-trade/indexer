@@ -1,6 +1,10 @@
-import { db } from '../services/db';
+import { postgresDatabase, createLogger } from '@winnr-trade/common';
 import { sql } from 'drizzle-orm';
-import logger from '../utils/logger';
+
+const logger = createLogger(process.env.NODE_ENV || 'development');
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) throw new Error("DATABASE_URL not set");
+const db = postgresDatabase(databaseUrl);
 
 async function reset() {
   logger.info('Starting full database reset...');

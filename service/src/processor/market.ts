@@ -1,9 +1,9 @@
 import { eq } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { markets } from '../../db/schema';
-import { EventSchema } from '../db';
-import { MarketEventPayload } from '../../types/events';
-import logger from '../../utils/logger';
+import { markets } from '@winnr-trade/common';
+import { EventSchema } from '@winnr-trade/common';
+import type { MarketEventPayload } from '@winnr-trade/common';
+import { logger } from '../logger';
 
 // Maps Rust PascalCase enum strings → our lowercase DB enum variants
 const statusMap: Record<string, 'active' | 'halted' | 'resolution_pending' | 'resolved'> = {

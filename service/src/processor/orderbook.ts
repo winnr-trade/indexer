@@ -1,6 +1,6 @@
-import { EventSchema } from '../db';
-import { bookUpdates } from '../../db/schema';
-import logger from '../../utils/logger';
+import { EventSchema } from '@winnr-trade/common';
+import { bookUpdates } from '@winnr-trade/common';
+import { logger } from '../logger';
 import { eq } from 'drizzle-orm';
 
 export async function processOrderbookEvents(

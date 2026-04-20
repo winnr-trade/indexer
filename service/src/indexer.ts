@@ -1,7 +1,7 @@
 import { type Rollup, SovereignClient } from "@sovereign-sdk/web3";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { Database, EventSchema } from "./db";
-import logger from "../utils/logger";
+import { logger } from './logger';
 import { EventProcessor } from "./processor";
 
 export type IndexerOpts = {
@@ -73,8 +73,6 @@ export class Indexer {
 
     const eventOffset = await this.getNextEventNumber();
     const events = await this.fetchEvents(eventOffset);
-    // console.log('events', eventOffset, events);
-    
 
     logger.debug(`Processing ${events.length} events through domain processor`);
     await this.eventProcessor.process(events).catch((e) => this.onError(e));
@@ -97,7 +95,6 @@ export class Indexer {
         "page[cursor]": String(currentEventNum),
         "page[size]": this.pollPageSize,
       });
-      // console.log('response', JSON.stringify(response, null, 2));
       
       return response.items.map((event) => ({
         // ...event,

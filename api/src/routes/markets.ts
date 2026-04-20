@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
-import { db } from '../../services/db';
-import { markets, bookUpdates, trades } from '../../db/schema';
+import { db } from '../db';
+import { markets, bookUpdates, trades } from '@winnr-trade/common';
 import { eq, desc, sql } from 'drizzle-orm';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';

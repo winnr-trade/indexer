@@ -1,0 +1,18 @@
+{
+  "name": "@winnr-trade/service",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "build": "bun build ./src/index.ts --compile --outfile ../bin/indexer"
+  },
+  "dependencies": {
+    "@sovereign-sdk/web3": "^0.13.1",
+    "drizzle-orm": "^0.45.2",
+    "dotenv": "^17.4.1",
+    "@winnr-trade/common": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.11"
+  }
+}

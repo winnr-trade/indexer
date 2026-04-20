@@ -1,6 +1,6 @@
-import { EventSchema } from '../db';
-import { trades, markets } from '../../db/schema';
-import logger from '../../utils/logger';
+import { EventSchema } from '@winnr-trade/common';
+import { trades, markets } from '@winnr-trade/common';
+import { logger } from '../logger';
 import { eq, sql } from 'drizzle-orm';
 
 export async function processTradeEvents(

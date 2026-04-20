@@ -1,7 +1,7 @@
-import { db } from "./services/db";
-import { Indexer } from "./services/indexer";
-import {rollup} from './services/rollup';
-import logger from "./utils/logger";
+import { db } from './db';
+import { logger } from './logger';;
+import { Indexer } from "./indexer";
+import { rollup } from './rollup';
 
 const indexer = new Indexer({
   rollup,
@@ -9,9 +9,13 @@ const indexer = new Indexer({
   pollIntervalMs: 3000
 });
 
+let isShuttingDown = false;
 async function onExit() {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
   logger.info("Exit signal received, shutting down indexer");
   await indexer.stop();
+  process.exit(0);
 }
 
 process.on("SIGINT", onExit);
