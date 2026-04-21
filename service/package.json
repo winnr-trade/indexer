@@ -1,10 +1,10 @@
 {
-  "name": "@winnr-trade/service",
+  "name": "indexer-service",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "bun run src/index.ts",
-    "build": "bun build ./src/index.ts --compile --outfile ../bin/indexer"
+    "build": "bun build ./src/index.ts --target=bun --outdir=./dist"
   },
   "dependencies": {
     "@sovereign-sdk/web3": "^0.13.1",

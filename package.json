@@ -11,8 +11,8 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
-    "dev:api": "turbo run dev --filter=@winnr-trade/api",
-    "dev:service": "turbo run dev --filter=@winnr-trade/service",
+    "dev:api": "turbo run dev --filter=indexer-api",
+    "dev:service": "turbo run dev --filter=indexer-service",
     "lint": "biome lint",
     "fix": "biome check --write",
     "db:push": "turbo run db:push",
