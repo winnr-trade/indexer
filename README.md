@@ -44,7 +44,7 @@ bun dev:service
 ```
 
 ### 4. Build
-To compile executable binaries (`/bin/indexer` and `/bin/api-server`):
+To compile the source code into optimized bundle files (`dist/index.js`) for server execution:
 ```bash
 bun run build
 ```
