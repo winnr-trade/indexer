@@ -15,16 +15,17 @@
     "dev:service": "turbo run dev --filter=indexer-service",
     "lint": "biome lint",
     "fix": "biome check --write",
-    "db:push": "turbo run db:push",
-    "db:generate": "turbo run db:generate",
+    "db:push": "drizzle-kit push --config=drizzle.config.ts",
+    "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
     "db:reset": "bun run ./scripts/reset.ts",
     "test:integration": "bun test"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.11",
-    "bun": "^1.0.0",
-    "drizzle-orm": "^0.45.2",
     "@winnr-trade/common": "workspace:*",
+    "bun": "^1.0.0",
+    "drizzle-kit": "0.31.10",
+    "drizzle-orm": "^0.45.2",
     "turbo": "^2.0.0",
     "typescript": "^6.0.2"
   }
