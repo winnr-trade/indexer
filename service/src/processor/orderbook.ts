@@ -34,7 +34,7 @@ export async function processOrderbookEvents(
           bestBid,
           bestAsk,
           midPrice,
-          timestamp: Date.now(), // Approximate timestamp for charting
+          timestamp: event.timestamp, // Accurate timestamp for charting
         });
         
         logger.debug(`BookUpdated for market ${marketId}: midPrice recorded as ${midPrice}`);

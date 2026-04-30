@@ -1,6 +1,6 @@
 import { type Rollup, SovereignClient } from "@sovereign-sdk/web3";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type { Database, EventSchema } from "./db";
+import { type Database, type EventSchema } from "@winnr-trade/common";
 import { logger } from './logger';
 import { EventProcessor } from "./processor";
 
@@ -74,7 +74,7 @@ export class Indexer {
     const eventOffset = await this.getNextEventNumber();
     const events = await this.fetchEvents(eventOffset);
 
-    logger.debug(`Processing ${events.length} events through domain processor`);
+    logger.info(`Polling rollup: offset=${eventOffset}, fetched=${events.length} events`);
     await this.eventProcessor.process(events).catch((e) => this.onError(e));
 
     this.indexingHandle = setTimeout(
@@ -103,6 +103,7 @@ export class Indexer {
         value: event.value,
         module: event.module.name,
         txHash: event.tx_hash,
+        timestamp: (event as any).timestamp || (event as any).block_timestamp || Date.now(),
       })) as EventSchema[];
     } catch (err) {
       this.setAndCheckHealth(err);

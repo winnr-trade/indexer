@@ -86,7 +86,7 @@ export async function processMarketEvents(
               status: 'active' as const,
               totalYesShares: 0,
               totalNoShares: 0,
-              createdAt: Date.now(),
+              createdAt: event.timestamp,
               eventNumber: event.number,
               txHash: event.txHash,
             })

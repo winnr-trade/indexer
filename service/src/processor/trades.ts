@@ -19,19 +19,22 @@ export async function processTradeEvents(
         const takerOrderId = Number(payload.taker_order_id);
         const price = Number(payload.price);
         const quantity = Number(payload.quantity);
+        const timestamp = Number(payload.timestamp)
 
-        // 1. Log the execution chronologically to the `trades` table.
         await db.insert(trades).values({
           marketId,
           makerOrderId,
           takerOrderId,
           price,
           quantity,
-          timestamp: Date.now(),
+          buyer: payload.buyer,
+          seller: payload.seller,
+          settlementKind: payload.settlement_kind?.toLowerCase(),
+          timestamp,
           txHash: event.txHash,
         });
 
-        // 2. Increment the volume counter on the `markets` table instantly!
+        // Increment the volume counter on the market
         await db.update(markets)
           .set({
             volume: sql`${markets.volume} + ${quantity}`,

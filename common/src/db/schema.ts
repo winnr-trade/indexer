@@ -11,6 +11,7 @@ import {
 export const marketStatusEnum = pgEnum('market_status', ['active', 'halted', 'resolution_pending', 'resolved']);
 export const marketOutcomeEnum = pgEnum('market_outcome', ['yes', 'no']);
 export const resolverTypeEnum = pgEnum('resolver_type', ['address', 'pyth', 'optimistic']);
+export const settlementKindEnum = pgEnum('settlement_kind', ['mint_pair', 'transfer_yes', 'transfer_no', 'merge_pair']);
 
 export const markets = pgTable('markets', {
   id: bigint('id', { mode: 'number' }).primaryKey(),
@@ -53,6 +54,9 @@ export const trades = pgTable('trades', {
   takerOrderId: bigint('taker_order_id', { mode: 'number' }).notNull(),
   price: bigint('price', { mode: 'number' }).notNull(),
   quantity: bigint('quantity', { mode: 'number' }).notNull(),
+  buyer: text('buyer').notNull(),
+  seller: text('seller').notNull(),
+  settlementKind: settlementKindEnum('settlement_kind').notNull(),
   timestamp: bigint('timestamp', { mode: 'number' }).notNull(),
   txHash: text('tx_hash').notNull(),
 });

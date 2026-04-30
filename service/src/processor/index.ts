@@ -12,6 +12,8 @@ export class EventProcessor {
   async process(events: EventSchema[]) {
     if (events.length === 0) return;
 
+    if (events.length === 0) return;
+
     await this.db.transaction(async (tx) => {
       const marketEvents = events.filter((e) => e.module === 'Market');
 
@@ -24,10 +26,14 @@ export class EventProcessor {
       
       if (orderbookEvents.length > 0) {
         logger.debug(`Dispatching ${orderbookEvents.length} orderbook events to handler`);
+        logger.info(`Dispatching ${orderbookEvents.length} orderbook events to handler`);
         await processOrderbookEvents(tx, orderbookEvents);
       }
 
-      const tradeEvents = events.filter((e) => e.module === 'Orderbook' && (e.key === 'Trade' || e.key === 'trade' || (e.value as any)?.type === 'Trade'));
+      const tradeEvents = events.filter((e) => 
+        e.module === 'Orderbook' && 
+        (e.key.includes('Trade') || (e.value as any)?.type?.toLowerCase() === 'trade')
+      );
       
       if (tradeEvents.length > 0) {
         logger.debug(`Dispatching ${tradeEvents.length} trade events to handler`);
