@@ -12,21 +12,16 @@ export class EventProcessor {
   async process(events: EventSchema[]) {
     if (events.length === 0) return;
 
-    if (events.length === 0) return;
-
     await this.db.transaction(async (tx) => {
       const marketEvents = events.filter((e) => e.module === 'Market');
-
       if (marketEvents.length > 0) {
         logger.debug(`Dispatching ${marketEvents.length} market events to handler`);
         await processMarketEvents(tx, marketEvents);
       }
 
       const orderbookEvents = events.filter((e) => e.module === 'Orderbook');
-      
       if (orderbookEvents.length > 0) {
         logger.debug(`Dispatching ${orderbookEvents.length} orderbook events to handler`);
-        logger.info(`Dispatching ${orderbookEvents.length} orderbook events to handler`);
         await processOrderbookEvents(tx, orderbookEvents);
       }
 
@@ -45,16 +40,16 @@ export class EventProcessor {
       await tx.insert(indexerState)
         .values({
           id: 'main',
-          lastEventNumber: lastEvent.number,
-          lastTxHash: lastEvent.txHash,
-          updatedAt: Date.now(),
+          last_event_number: lastEvent.number,
+          last_tx_hash: lastEvent.txHash,
+          updated_at: Date.now(),
         })
         .onConflictDoUpdate({
           target: indexerState.id,
           set: {
-            lastEventNumber: lastEvent.number,
-            lastTxHash: lastEvent.txHash,
-            updatedAt: Date.now(),
+            last_event_number: lastEvent.number,
+            last_tx_hash: lastEvent.txHash,
+            updated_at: Date.now(),
           }
         });
     });

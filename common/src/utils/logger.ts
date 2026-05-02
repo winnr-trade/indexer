@@ -2,7 +2,7 @@ import winston from "winston";
 
 export function createLogger(env: string) {
   const isTest = env === "test";
-  const level = env !== "production" ? "verbose" : "info";
+  const level = env !== "production" ? "debug" : "info";
 
   return winston.createLogger({
     silent: isTest,

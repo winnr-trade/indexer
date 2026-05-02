@@ -28,11 +28,11 @@ export function postgresDatabase(connectionString: string): PostgresDatabase {
     inner: db,
     async getLatestEventNumber(): Promise<number | null> {
       const result = await db
-        .select({ lastEventNumber: indexerState.lastEventNumber })
+        .select({ last_event_number: indexerState.last_event_number })
         .from(indexerState)
         .where(eq(indexerState.id, "main"))
         .limit(1);
-      return result[0]?.lastEventNumber ?? null;
+      return result[0]?.last_event_number ?? null;
     },
     disconnect() {
       return pool.end();

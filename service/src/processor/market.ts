@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { markets } from '@winnr-trade/common';
 import { EventSchema } from '@winnr-trade/common';
@@ -34,7 +34,7 @@ export async function processMarketEvents(
     if (event.module !== 'Market') continue;
 
     const payload = event.value as unknown as MarketEventPayload;
-
+    
     try {
       switch (payload.type) {
         case 'market_created': {
@@ -79,45 +79,81 @@ export async function processMarketEvents(
               id: payload.market_id,
               question: payload.question,
               creator: payload.creator,
-              collateralToken: token,
-              resolutionTime: payload.resolution_time,
-              resolverType,
-              resolverConfig,
+              collateral_token: token,
+              resolution_time: payload.resolution_time,
+              resolver_type: resolverType,
+              resolver_config: resolverConfig,
               status: 'active' as const,
-              totalYesShares: 0,
-              totalNoShares: 0,
-              createdAt: event.timestamp,
-              eventNumber: event.number,
-              txHash: event.txHash,
+              total_shares: 0,
+              created_at: event.timestamp,
+              event_number: event.number,
+              tx_hash: event.txHash,
             })
             .onConflictDoNothing();
           
           logger.info(`Market created: ${payload.market_id} (resolver: ${resolverType})`);
           break;
         }
+
         case 'market_status_changed': {
           await db.update(markets)
             .set({ 
               status: normalizeStatus(payload.new_status),
-              eventNumber: event.number,
-              txHash: event.txHash
+              event_number: event.number,
+              tx_hash: event.txHash
             })
             .where(eq(markets.id, payload.market_id));
 
           logger.info(`Market status changed: ${payload.market_id} to ${payload.new_status}`);
           break;
         }
+        
         case 'market_resolved': {
           await db.update(markets)
             .set({ 
               status: 'resolved' as const, 
               outcome: normalizeOutcome(payload.outcome),
-              eventNumber: event.number,
-              txHash: event.txHash
+              event_number: event.number,
+              tx_hash: event.txHash
             })
             .where(eq(markets.id, payload.market_id));
 
           logger.info(`Market resolved: ${payload.market_id} with outcome ${payload.outcome}`);
+          break;
+        }
+
+        case 'shares_minted': {
+          const amount = Number(payload.amount);
+          await db.update(markets)
+            .set({ 
+              total_shares: sql`${markets.total_shares} + ${amount}`,
+              event_number: event.number,
+              tx_hash: event.txHash
+            })
+            .where(eq(markets.id, payload.market_id));
+
+          logger.info(`Shares minted for market ${payload.market_id}: +${amount}`);
+          break;
+        }
+
+        case 'shares_redeemed': {
+          const amount = Number(payload.amount);
+          await db.update(markets)
+            .set({ 
+              total_shares: sql`${markets.total_shares} - ${amount}`,
+              event_number: event.number,
+              tx_hash: event.txHash
+            })
+            .where(eq(markets.id, payload.market_id));
+
+          logger.info(`Shares redeemed for market ${payload.market_id}: -${amount}`);
+          break;
+        }
+        
+        case 'winnings_claimed': {
+          // You might track payouts somewhere, but for now we just log it
+          // totalShares are not decremented here typically, or if they are, it's tracked in a separate `claimed` table
+          logger.info(`Winnings claimed for market ${payload.market_id} by ${payload.user}: ${payload.winning_shares} shares -> ${payload.payout} payout`);
           break;
         }
       }

@@ -22,7 +22,32 @@ export interface MarketResolvedPayload {
   resolver: string;
 }
 
+export interface SharesMintedPayload {
+  type: "shares_minted";
+  market_id: number;
+  user: string;
+  amount: number;
+}
+
+export interface SharesRedeemedPayload {
+  type: "shares_redeemed";
+  market_id: number;
+  user: string;
+  amount: number;
+}
+
+export interface WinningsClaimedPayload {
+  type: "winnings_claimed";
+  market_id: number;
+  user: string;
+  winning_shares: number;
+  payout: number;
+}
+
 export type MarketEventPayload =
   | MarketCreatedPayload
   | MarketStatusChangedPayload
-  | MarketResolvedPayload;
+  | MarketResolvedPayload
+  | SharesMintedPayload
+  | SharesRedeemedPayload
+  | WinningsClaimedPayload;

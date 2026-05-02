@@ -48,3 +48,16 @@ To compile the source code into optimized bundle files (`dist/index.js`) for ser
 ```bash
 bun run build
 ```
+
+## Volume Metrics
+
+The indexer computes deterministic volume metrics from `Trade` events to prevent double counting.
+
+- **Shares Volume**: The raw number of outcome shares traded.
+- **Collateral Base Volume**: The actual capital transferred or minted in the market's collateral token (normalized to 10^6 decimals for exact math). It calculates true value based on the settlement kind:
+  - `mint_pair`: The raw quantity (cost of minting).
+  - `transfer_yes`: `(price * quantity) / 10000`
+  - `transfer_no`: `((10000 - price) * quantity) / 10000`
+  - `merge_pair`: Zero contribution to capital volume under our policy.
+
+> **Note**: `Trade` events are the sole source of truth for these metrics. Events like `OrderFilled`, `OrderPlaced`, `SharesMinted`, or `SharesRedeemed` are deliberately excluded to enforce strict anti-double-counting guarantees.

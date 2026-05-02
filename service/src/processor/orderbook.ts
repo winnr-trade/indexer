@@ -30,10 +30,10 @@ export async function processOrderbookEvents(
         }
 
         await db.insert(bookUpdates).values({
-          marketId,
-          bestBid,
-          bestAsk,
-          midPrice,
+          market_id: marketId,
+          best_bid: bestBid,
+          best_ask: bestAsk,
+          mid_price: midPrice,
           timestamp: event.timestamp, // Accurate timestamp for charting
         });
         

@@ -19,30 +19,49 @@ export async function processTradeEvents(
         const takerOrderId = Number(payload.taker_order_id);
         const price = Number(payload.price);
         const quantity = Number(payload.quantity);
-        const timestamp = Number(payload.timestamp)
+        const timestamp = Number(payload.timestamp) || event.timestamp;
+        const settlementKind = payload.settlement_kind?.toLowerCase();
+        
+        const sharesVolume = quantity;
+        const yesNotionalInternal = Math.floor((price * quantity) / 10000);
+        const noNotionalInternal = Math.floor(((10000 - price) * quantity) / 10000);
+        
+        let collateralVolumeInternal = 0;
+        if (settlementKind === 'mint_pair') collateralVolumeInternal = quantity;
+        else if (settlementKind === 'transfer_yes') collateralVolumeInternal = yesNotionalInternal;
+        else if (settlementKind === 'transfer_no') collateralVolumeInternal = noNotionalInternal;
+        
+        const baseMultiplier = 1000000;
+        const collateralVolumeBase = collateralVolumeInternal * baseMultiplier;
 
         await db.insert(trades).values({
-          marketId,
-          makerOrderId,
-          takerOrderId,
+          market_id: marketId,
+          maker_order_id: makerOrderId,
+          taker_order_id: takerOrderId,
           price,
           quantity,
           buyer: payload.buyer,
           seller: payload.seller,
-          settlementKind: payload.settlement_kind?.toLowerCase(),
+          settlement_kind: settlementKind,
           timestamp,
-          txHash: event.txHash,
+          tx_hash: event.txHash,
         });
 
-        // Increment the volume counter on the market
+        // Update the counters on the market
+        let sharesDelta = 0;
+        if (settlementKind === 'mint_pair') sharesDelta = quantity;
+        else if (settlementKind === 'merge_pair') sharesDelta = -quantity;
+
         await db.update(markets)
           .set({
-            volume: sql`${markets.volume} + ${quantity}`,
-            eventNumber: event.number,
-            txHash: event.txHash,
+            total_shares_volume: sql`${markets.total_shares_volume} + ${sharesVolume}`,
+            total_volume: sql`${markets.total_volume} + ${collateralVolumeBase}`,
+            total_shares: sql`${markets.total_shares} + ${sharesDelta}`,
+            event_number: event.number,
+            tx_hash: event.txHash,
           })
           .where(eq(markets.id, marketId));
-          
+
         logger.debug(`Trade recorded for market ${marketId}: Quantity ${quantity} at Price ${price}`);
       } catch (err) {
         logger.error(`Failed to process trade event.`, err);

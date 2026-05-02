@@ -128,7 +128,7 @@ marketsRouter.get('/:id/trades', readOnlyCache, zValidator('query', z.object({
 
   const data = await db.inner.select()
     .from(trades)
-    .where(eq(trades.marketId, idValue as any))
+    .where(eq(trades.market_id, idValue as any))
     .orderBy(desc(trades.timestamp), desc(trades.id))
     .limit(limit);
 
