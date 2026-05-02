@@ -26,6 +26,8 @@ export const markets = pgTable('markets', {
   total_shares: bigint('total_shares', { mode: 'number' }).default(0).notNull(),
   total_shares_volume: bigint('total_shares_volume', { mode: 'number' }).default(0).notNull(),
   total_volume: bigint('total_volume', { mode: 'number' }).default(0).notNull(),
+  best_bid: bigint('best_bid', { mode: 'number' }),
+  best_ask: bigint('best_ask', { mode: 'number' }),
   created_at: bigint('created_at', { mode: 'number' }).notNull(),
   event_number: integer('event_number').notNull(),
   tx_hash: text('tx_hash').notNull(),

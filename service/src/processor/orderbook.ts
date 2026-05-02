@@ -1,5 +1,5 @@
 import { EventSchema } from '@winnr-trade/common';
-import { bookUpdates } from '@winnr-trade/common';
+import { bookUpdates, markets } from '@winnr-trade/common';
 import { logger } from '../logger';
 import { eq } from 'drizzle-orm';
 
@@ -36,8 +36,18 @@ export async function processOrderbookEvents(
           mid_price: midPrice,
           timestamp: event.timestamp, // Accurate timestamp for charting
         });
+
+        // Also update the current snapshot in the markets table
+        await db.update(markets)
+          .set({
+            best_bid: bestBid,
+            best_ask: bestAsk,
+            event_number: event.number,
+            tx_hash: event.txHash,
+          })
+          .where(eq(markets.id, marketId));
         
-        logger.debug(`BookUpdated for market ${marketId}: midPrice recorded as ${midPrice}`);
+        logger.debug(`BookUpdated for market ${marketId}: best_bid=${bestBid}, best_ask=${bestAsk}`);
       } catch (err) {
         logger.error(`Failed to process book update event.`, err);
       }

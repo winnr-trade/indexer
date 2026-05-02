@@ -23,31 +23,17 @@ marketsRouter.get(
   async (c) => {
     const { status, limit } = c.req.valid('query');
     
-    // Build a WHERE clause fragment for optional status filtering
-    const statusFilter = status ? sql`AND m.status = ${status}` : sql``;
+    const whereClause = status ? eq(markets.status, status) : undefined;
 
-    // Query markets with the latest mid_price from book_updates via a lateral join.
-    // This gives us the probability (mid_price) without needing per-market requests.
-    const result = await db.inner.execute(sql`
-      SELECT 
-        m.*,
-        latest_bu.mid_price AS latest_mid_price
-      FROM markets m
-      LEFT JOIN LATERAL (
-        SELECT mid_price
-        FROM book_updates bu
-        WHERE bu.market_id = m.id
-        ORDER BY bu."timestamp" DESC
-        LIMIT 1
-      ) latest_bu ON true
-      WHERE 1=1 ${statusFilter}
-      ORDER BY m.created_at DESC
-      LIMIT ${limit}
-    `);
+    const data = await db.inner.select()
+      .from(markets)
+      .where(whereClause)
+      .orderBy(desc(markets.created_at))
+      .limit(limit);
 
     return c.json({
       success: true,
-      data: result.rows,
+      data,
     });
   }
 );
