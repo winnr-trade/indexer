@@ -2,6 +2,8 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { marketsRouter } from './routes/markets';
+import { tradesRouter } from './routes/trades';
+import { positionsRouter } from './routes/positions';
 
 const app = new Hono();
 
@@ -20,6 +22,8 @@ app.get('/status', (c) => c.json({ status: 'ok', timestamp: Date.now() }));
 
 // Mount Domains
 app.route('/api/v1/markets', marketsRouter);
+app.route('/api/v1/trades', tradesRouter);
+app.route('/api/v1/positions', positionsRouter);
 
 console.log(`Server starting on port ${process.env.API_PORT || 4000}`);
 

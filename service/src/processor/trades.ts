@@ -1,6 +1,7 @@
 import { EventSchema } from '@winnr-trade/common';
 import { trades, markets } from '@winnr-trade/common';
 import { logger } from '../logger';
+import { updatePosition } from './positions';
 import { eq, sql } from 'drizzle-orm';
 
 export async function processTradeEvents(
@@ -61,6 +62,30 @@ export async function processTradeEvents(
             tx_hash: event.txHash,
           })
           .where(eq(markets.id, marketId));
+
+        // Update user positions
+        const buyer = payload.buyer;
+        const seller = payload.seller;
+        const costYes = Math.floor((price * quantity)); // Using unit-less price base
+        const costNo = Math.floor(((10000 - price) * quantity));
+
+        if (settlementKind === 'mint_pair') {
+          // Buyer gets YES, Seller gets NO
+          await updatePosition(db, buyer, marketId, quantity, 0, costYes, 0);
+          await updatePosition(db, seller, marketId, 0, quantity, 0, costNo);
+        } else if (settlementKind === 'transfer_yes') {
+          // Buyer gets YES, Seller gives YES
+          await updatePosition(db, buyer, marketId, quantity, 0, costYes, 0);
+          await updatePosition(db, seller, marketId, -quantity, 0, -costYes, 0);
+        } else if (settlementKind === 'transfer_no') {
+          // Buyer gives NO, Seller gets NO
+          await updatePosition(db, buyer, marketId, 0, -quantity, 0, -costNo);
+          await updatePosition(db, seller, marketId, 0, quantity, 0, costNo);
+        } else if (settlementKind === 'merge_pair') {
+          // Buyer gives NO, Seller gives YES
+          await updatePosition(db, buyer, marketId, 0, -quantity, 0, -costNo);
+          await updatePosition(db, seller, marketId, -quantity, 0, -costYes, 0);
+        }
 
         logger.debug(`Trade recorded for market ${marketId}: Quantity ${quantity} at Price ${price}`);
       } catch (err) {

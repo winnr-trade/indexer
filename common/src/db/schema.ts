@@ -62,3 +62,18 @@ export const trades = pgTable('trades', {
   timestamp: bigint('timestamp', { mode: 'number' }).notNull(),
   tx_hash: text('tx_hash').notNull(),
 });
+
+import { uniqueIndex } from 'drizzle-orm/pg-core';
+
+export const positions = pgTable('positions', {
+  id: serial('id').primaryKey(),
+  user_address: text('user_address').notNull(),
+  market_id: bigint('market_id', { mode: 'number' }).notNull(),
+  yes_shares: bigint('yes_shares', { mode: 'number' }).default(0).notNull(),
+  no_shares: bigint('no_shares', { mode: 'number' }).default(0).notNull(),
+  total_cost_yes: bigint('total_cost_yes', { mode: 'number' }).default(0).notNull(),
+  total_cost_no: bigint('total_cost_no', { mode: 'number' }).default(0).notNull(),
+  updated_at: bigint('updated_at', { mode: 'number' }).notNull(),
+}, (t) => ({
+  user_market_idx: uniqueIndex('user_market_idx').on(t.user_address, t.market_id),
+}));
