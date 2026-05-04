@@ -7,6 +7,7 @@ import {
   serial,
   jsonb
 } from 'drizzle-orm/pg-core';
+import { uniqueIndex } from 'drizzle-orm/pg-core';
 
 export const marketStatusEnum = pgEnum('market_status', ['active', 'halted', 'resolution_pending', 'resolved']);
 export const marketOutcomeEnum = pgEnum('market_outcome', ['yes', 'no']);
@@ -63,7 +64,7 @@ export const trades = pgTable('trades', {
   tx_hash: text('tx_hash').notNull(),
 });
 
-import { uniqueIndex } from 'drizzle-orm/pg-core';
+
 
 export const positions = pgTable('positions', {
   id: serial('id').primaryKey(),
@@ -74,6 +75,6 @@ export const positions = pgTable('positions', {
   total_cost_yes: bigint('total_cost_yes', { mode: 'number' }).default(0).notNull(),
   total_cost_no: bigint('total_cost_no', { mode: 'number' }).default(0).notNull(),
   updated_at: bigint('updated_at', { mode: 'number' }).notNull(),
-}, (t) => ({
-  user_market_idx: uniqueIndex('user_market_idx').on(t.user_address, t.market_id),
-}));
+}, (t) => [
+  uniqueIndex('user_market_idx').on(t.user_address, t.market_id),
+]);
