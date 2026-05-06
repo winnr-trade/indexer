@@ -19,7 +19,7 @@ export const markets = pgTable('markets', {
   question: text('question').notNull(),
   creator: text('creator').notNull(),
   collateral_token: text('collateral_token').notNull(),
-  resolution_time: integer('resolution_time').notNull(),
+  resolution_time: bigint('resolution_time', { mode: 'number' }).notNull(),
   resolver_type: resolverTypeEnum('resolver_type').notNull(),
   resolver_config: jsonb('resolver_config').$type<Record<string, unknown>>().default({}).notNull(),
   status: marketStatusEnum('status').default('active').notNull(),
@@ -29,7 +29,7 @@ export const markets = pgTable('markets', {
   total_volume: bigint('total_volume', { mode: 'number' }).default(0).notNull(),
   best_bid: integer('best_bid'),
   best_ask: integer('best_ask'),
-  created_at: integer('created_at').notNull(),
+  created_at: bigint('created_at', { mode: 'number' }).notNull(),
   event_number: integer('event_number').notNull(),
   tx_hash: text('tx_hash').notNull(),
 });
@@ -38,7 +38,7 @@ export const indexerState = pgTable('indexer_state', {
   id: text('id').primaryKey(),
   last_event_number: integer('last_event_number').notNull(),
   last_tx_hash: text('last_tx_hash').notNull(),
-  updated_at: integer('updated_at').notNull(),
+  updated_at: bigint('updated_at', { mode: 'number' }).notNull(),
 });
 
 export const bookUpdates = pgTable('book_updates', {
@@ -46,7 +46,7 @@ export const bookUpdates = pgTable('book_updates', {
   market_id: bigint('market_id', { mode: 'number' }).notNull(),
   best_bid: integer('best_bid'),
   best_ask: integer('best_ask'),
-  timestamp: integer('timestamp').notNull(),
+  timestamp: bigint('timestamp', { mode: 'number' }).notNull(),
 });
 
 export const trades = pgTable('trades', {
@@ -59,7 +59,7 @@ export const trades = pgTable('trades', {
   buyer: text('buyer').notNull(),
   seller: text('seller').notNull(),
   settlement_kind: settlementKindEnum('settlement_kind').notNull(),
-  timestamp: integer('timestamp').notNull(),
+  timestamp: bigint('timestamp', { mode: 'number' }).notNull(),
   tx_hash: text('tx_hash').notNull(),
 });
 
@@ -72,7 +72,7 @@ export const positions = pgTable('positions', {
   quantity_no: bigint('quantity_no', { mode: 'number' }).default(0).notNull(),
   total_cost_yes: bigint('total_cost_yes', { mode: 'number' }).default(0).notNull(),
   total_cost_no: bigint('total_cost_no', { mode: 'number' }).default(0).notNull(),
-  updated_at: integer('updated_at').notNull(),
+  updated_at: bigint('updated_at', { mode: 'number' }).notNull(),
 }, (t) => [
   primaryKey({ columns: [t.user_address, t.market_id] }),
 ]);
