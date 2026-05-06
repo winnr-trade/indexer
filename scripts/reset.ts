@@ -14,12 +14,14 @@ async function reset() {
     await db.inner.execute(sql`DROP TABLE IF EXISTS trades CASCADE`);
     await db.inner.execute(sql`DROP TABLE IF EXISTS book_updates CASCADE`);
     await db.inner.execute(sql`DROP TABLE IF EXISTS markets CASCADE`);
+    await db.inner.execute(sql`DROP TABLE IF EXISTS positions CASCADE`);
     await db.inner.execute(sql`DROP TABLE IF EXISTS indexer_state CASCADE`);
     
     logger.info('Dropping custom enum types...');
     await db.inner.execute(sql`DROP TYPE IF EXISTS market_status CASCADE`);
     await db.inner.execute(sql`DROP TYPE IF EXISTS market_outcome CASCADE`);
     await db.inner.execute(sql`DROP TYPE IF EXISTS resolver_type CASCADE`);
+    await db.inner.execute(sql`DROP TYPE IF EXISTS settlement_kind CASCADE`);
 
     logger.info('Database fully reset. Run "bun run db:push" to recreate schema.');
     process.exit(0);
