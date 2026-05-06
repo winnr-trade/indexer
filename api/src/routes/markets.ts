@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { db } from '../db';
 import { markets, bookUpdates, trades } from '@winnr-trade/common';
-import { eq, desc, sql } from 'drizzle-orm';
+import { eq, desc, sql, and, gte, lte } from 'drizzle-orm';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 
@@ -61,44 +61,34 @@ marketsRouter.get('/:id', readOnlyCache, async (c) => {
 });
 
 marketsRouter.get('/:id/chart', readOnlyCache, zValidator('query', z.object({
-  resolution: z.enum(['1m', '15m', '1h', '1d', '1w', 'all']).default('1d'),
+  startTime: z.coerce.number().optional(),
+  endTime: z.coerce.number().optional(),
   limit: z.coerce.number().min(1).max(5000).default(1000)
 })), async (c) => {
   const idValue = Number(c.req.param('id'));
-  const { resolution, limit } = c.req.valid('query');
+  const { startTime, endTime, limit } = c.req.valid('query');
 
   if (isNaN(idValue)) {
     return c.json({ success: false, error: 'Invalid Market ID' }, 400);
   }
 
-  // Define the timespan in milliseconds for the "lookback" window
-  const lookbackMap: Record<string, number> = {
-    '1m': 60 * 1000,
-    '15m': 15 * 60 * 1000,
-    '1h': 60 * 60 * 1000,
-    '1d': 24 * 60 * 60 * 1000,
-    '1w': 7 * 24 * 60 * 60 * 1000,
-    'all': Number.MAX_SAFE_INTEGER,
-  };
-  const windowMs = lookbackMap[resolution] || lookbackMap['1d'];
-  const startTimeMs = resolution === 'all' ? 0 : Date.now() - windowMs;
+  const conditions = [eq(bookUpdates.market_id, idValue as any)];
+  if (startTime) conditions.push(gte(bookUpdates.timestamp, startTime));
+  if (endTime) conditions.push(lte(bookUpdates.timestamp, endTime));
 
-  // For prediction markets, we don't bucket - we just fetch chronological raw line data from the lookback window.
-  // We grab the most recent data (DESC), then reverse arrays locally to ensure chronological (left to right) rendering.
-  const result = await db.inner.execute(sql`
-    SELECT 
-      "timestamp" AS time,
-      mid_price AS price
-    FROM book_updates
-    WHERE market_id = ${idValue} AND "timestamp" >= ${startTimeMs}
-    ORDER BY "timestamp" DESC
-    LIMIT ${limit}
-  `);
+  const result = await db.inner.select({
+      timestamp: bookUpdates.timestamp,
+      best_bid: bookUpdates.best_bid,
+      best_ask: bookUpdates.best_ask,
+    })
+    .from(bookUpdates)
+    .where(and(...conditions))
+    .orderBy(desc(bookUpdates.timestamp))
+    .limit(limit);
 
   return c.json({
     success: true,
-    resolution,
-    data: result.rows.reverse(),
+    data: result.reverse(),
   });
 });
 
