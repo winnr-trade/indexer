@@ -1,9 +1,18 @@
 import { EventSchema } from '@winnr-trade/common';
 import { trades, markets } from '@winnr-trade/common';
 import { logger } from '../logger';
-import { updatePosition } from './positions';
+
 import { eq, sql } from 'drizzle-orm';
 
+/**
+ * Processes Trade events from the orderbook.
+ *
+ * Responsibilities:
+ *   1. Record the trade in the `trades` table.
+ *   2. Update market-level counters (volume, total_shares).
+ *   3. Update position cost basis (shares are NOT touched here —
+ *      they are handled by share-level events in market.ts).
+ */
 export async function processTradeEvents(
   db: any,
   events: EventSchema[]
@@ -12,7 +21,6 @@ export async function processTradeEvents(
     const payload: any = event.value;
     const eventType = payload.type || event.key;
 
-    // Accounts for both strict variant name mapping and snake_case API mappings
     if (eventType === 'Trade' || eventType === 'trade') {
       try {
         const marketId = Number(payload.market_id);
@@ -22,75 +30,56 @@ export async function processTradeEvents(
         const quantity = Number(payload.quantity);
         const timestamp = Number(payload.timestamp) || event.timestamp;
         const settlementKind = payload.settlement_kind?.toLowerCase();
-        
-        const sharesVolume = quantity;
-        const yesNotionalInternal = Math.floor((price * quantity) / 10000);
-        const noNotionalInternal = Math.floor(((10000 - price) * quantity) / 10000);
-        
-        let collateralVolumeInternal = 0;
-        if (settlementKind === 'mint_pair') collateralVolumeInternal = quantity;
-        else if (settlementKind === 'transfer_yes') collateralVolumeInternal = yesNotionalInternal;
-        else if (settlementKind === 'transfer_no') collateralVolumeInternal = noNotionalInternal;
-        
-        const baseMultiplier = 1000000;
-        const collateralVolumeBase = collateralVolumeInternal * baseMultiplier;
+        const buyer = payload.buyer;
+        const seller = payload.seller;
 
+        // quantity is a share count; prices are bps (base 10000)
+        // All stored costs/volumes are in USDC base units (6 decimals, 1 USDC = 1_000_000)
+        const USDC_DECIMALS = 1_000_000;
+
+        // --- 1. Record the trade row ---
         await db.insert(trades).values({
           market_id: marketId,
           maker_order_id: makerOrderId,
           taker_order_id: takerOrderId,
           price,
           quantity,
-          buyer: payload.buyer,
-          seller: payload.seller,
+          buyer,
+          seller,
           settlement_kind: settlementKind,
           timestamp,
           tx_hash: event.txHash,
         });
 
-        // Update the counters on the market
+        // --- 2. Update market-level counters ---
+        let collateralVolume = 0;
+        if (settlementKind === 'mint_pair') {
+          collateralVolume = quantity * USDC_DECIMALS;
+        } else if (settlementKind === 'transfer_yes') {
+          collateralVolume = Math.floor((price * quantity * USDC_DECIMALS) / 10000);
+        } else if (settlementKind === 'transfer_no') {
+          collateralVolume = Math.floor(((10000 - price) * quantity * USDC_DECIMALS) / 10000);
+        }
+
         let sharesDelta = 0;
         if (settlementKind === 'mint_pair') sharesDelta = quantity;
         else if (settlementKind === 'merge_pair') sharesDelta = -quantity;
 
         await db.update(markets)
           .set({
-            total_shares_volume: sql`${markets.total_shares_volume} + ${sharesVolume}`,
-            total_volume: sql`${markets.total_volume} + ${collateralVolumeBase}`,
+            total_shares_volume: sql`${markets.total_shares_volume} + ${quantity}`,
+            total_volume: sql`${markets.total_volume} + ${collateralVolume}`,
             total_shares: sql`${markets.total_shares} + ${sharesDelta}`,
             event_number: event.number,
             tx_hash: event.txHash,
           })
           .where(eq(markets.id, marketId));
 
-        // Update user positions
-        const buyer = payload.buyer;
-        const seller = payload.seller;
-        const costYes = Math.floor((price * quantity)); // Using unit-less price base
-        const costNo = Math.floor(((10000 - price) * quantity));
-
-        if (settlementKind === 'mint_pair') {
-          // Buyer gets YES, Seller gets NO
-          await updatePosition(db, buyer, marketId, quantity, 0, costYes, 0);
-          await updatePosition(db, seller, marketId, 0, quantity, 0, costNo);
-        } else if (settlementKind === 'transfer_yes') {
-          // Buyer gets YES, Seller gives YES
-          await updatePosition(db, buyer, marketId, quantity, 0, costYes, 0);
-          await updatePosition(db, seller, marketId, -quantity, 0, -costYes, 0);
-        } else if (settlementKind === 'transfer_no') {
-          // Buyer gives NO, Seller gets NO
-          await updatePosition(db, buyer, marketId, 0, -quantity, 0, -costNo);
-          await updatePosition(db, seller, marketId, 0, quantity, 0, costNo);
-        } else if (settlementKind === 'merge_pair') {
-          // Buyer gives NO, Seller gives YES
-          await updatePosition(db, buyer, marketId, 0, -quantity, 0, -costNo);
-          await updatePosition(db, seller, marketId, -quantity, 0, -costYes, 0);
-        }
-
-        logger.debug(`Trade recorded for market ${marketId}: Quantity ${quantity} at Price ${price}`);
+        logger.debug(`Trade recorded: market=${marketId} qty=${quantity} price=${price} settlement=${settlementKind}`);
       } catch (err) {
         logger.error(`Failed to process trade event.`, err);
       }
     }
   }
 }
+

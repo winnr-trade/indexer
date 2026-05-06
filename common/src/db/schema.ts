@@ -5,7 +5,8 @@ import {
   integer,
   pgEnum,
   serial,
-  jsonb
+  jsonb,
+  primaryKey
 } from 'drizzle-orm/pg-core';
 import { uniqueIndex } from 'drizzle-orm/pg-core';
 
@@ -67,14 +68,13 @@ export const trades = pgTable('trades', {
 
 
 export const positions = pgTable('positions', {
-  id: serial('id').primaryKey(),
   user_address: text('user_address').notNull(),
   market_id: bigint('market_id', { mode: 'number' }).notNull(),
-  yes_shares: bigint('yes_shares', { mode: 'number' }).default(0).notNull(),
-  no_shares: bigint('no_shares', { mode: 'number' }).default(0).notNull(),
+  quantity_yes: bigint('quantity_yes', { mode: 'number' }).default(0).notNull(),
+  quantity_no: bigint('quantity_no', { mode: 'number' }).default(0).notNull(),
   total_cost_yes: bigint('total_cost_yes', { mode: 'number' }).default(0).notNull(),
   total_cost_no: bigint('total_cost_no', { mode: 'number' }).default(0).notNull(),
   updated_at: bigint('updated_at', { mode: 'number' }).notNull(),
-}, (t) => [
-  uniqueIndex('user_market_idx').on(t.user_address, t.market_id),
-]);
+}, (t) => ({
+  pk: primaryKey({ columns: [t.user_address, t.market_id] }),
+}));

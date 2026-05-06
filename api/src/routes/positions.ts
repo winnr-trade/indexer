@@ -18,13 +18,12 @@ positionsRouter.get('/', zValidator('query', z.object({
 
   try {
     const data = await db.inner.select({
-      id: positions.id,
       user_address: positions.user_address,
       market_id: positions.market_id,
       question: markets.question,
       outcome: markets.outcome,
-      yes_shares: positions.yes_shares,
-      no_shares: positions.no_shares,
+      quantity_yes: positions.quantity_yes,
+      quantity_no: positions.quantity_no,
       total_cost_yes: positions.total_cost_yes,
       total_cost_no: positions.total_cost_no,
       best_bid: markets.best_bid,
@@ -43,34 +42,9 @@ positionsRouter.get('/', zValidator('query', z.object({
     .limit(limit)
     .offset(offset);
 
-    // Compute derived fields for the frontend
-    const enrichedData = data.map((pos) => {
-      const avgPriceYes = pos.yes_shares > 0 ? Number(pos.total_cost_yes) / Number(pos.yes_shares) : 0;
-      const avgPriceNo = pos.no_shares > 0 ? Number(pos.total_cost_no) / Number(pos.no_shares) : 0;
-      
-      const bestBid = pos.best_bid !== null ? Number(pos.best_bid) : null;
-      const bestAsk = pos.best_ask !== null ? Number(pos.best_ask) : null;
-      
-      let latestMidPrice = 5000;
-      if (bestBid !== null && bestAsk !== null) {
-        latestMidPrice = Math.floor((bestBid + bestAsk) / 2);
-      } else if (bestBid !== null) {
-        latestMidPrice = bestBid;
-      } else if (bestAsk !== null) {
-        latestMidPrice = bestAsk;
-      }
-
-      return {
-        ...pos,
-        avg_price_yes: Math.floor(avgPriceYes),
-        avg_price_no: Math.floor(avgPriceNo),
-        latest_mid_price: latestMidPrice,
-      };
-    });
-
     return c.json({
       success: true,
-      data: enrichedData,
+      data,
     });
   } catch (error) {
     console.error('Failed to fetch user positions:', error);

@@ -60,4 +60,4 @@ The indexer computes deterministic volume metrics from `Trade` events to prevent
   - `transfer_no`: `((10000 - price) * quantity) / 10000`
   - `merge_pair`: Zero contribution to capital volume under our policy.
 
-> **Note**: `Trade` events are the sole source of truth for these metrics. Events like `OrderFilled`, `OrderPlaced`, `SharesMinted`, or `SharesRedeemed` are deliberately excluded to enforce strict anti-double-counting guarantees.
+> **Note**: `Trade` events are the sole source of truth for these metrics. Events like `OrderFilled`, `OrderPlaced`, `SharesMinted`, or `SharesBurned` are deliberately excluded to enforce strict anti-double-counting guarantees.

@@ -4,7 +4,6 @@ import { markets } from '@winnr-trade/common';
 import { EventSchema } from '@winnr-trade/common';
 import type { MarketEventPayload } from '@winnr-trade/common';
 import { logger } from '../logger';
-import { updatePosition } from './positions';
 
 // Maps Rust PascalCase enum strings → our lowercase DB enum variants
 const statusMap: Record<string, 'active' | 'halted' | 'resolution_pending' | 'resolved'> = {
@@ -133,16 +132,11 @@ export async function processMarketEvents(
             })
             .where(eq(markets.id, payload.market_id));
 
-          // Base cost per pair is 1 unit (10000). We split this cost between YES (5000) and NO (5000).
-          // You could also track it as 10000 for one and 0 for the other, but splitting is safer.
-          const costPerShare = amount * 5000;
-          await updatePosition(db, payload.user, payload.market_id, amount, amount, costPerShare, costPerShare);
-
           logger.info(`Shares minted for market ${payload.market_id}: +${amount}`);
           break;
         }
 
-        case 'shares_redeemed': {
+        case 'shares_burned': {
           const amount = Number(payload.amount);
           await db.update(markets)
             .set({ 
@@ -152,25 +146,24 @@ export async function processMarketEvents(
             })
             .where(eq(markets.id, payload.market_id));
 
-          // When redeeming, user gets back 10000 per pair.
-          // We reduce their costs proportionally to the number of shares removed.
-          // Since our helper `updatePosition` just takes deltas, we need to pass a negative delta for shares.
-          // But what about the cost delta? If we just want to keep avg price the same, we shouldn't guess the delta if we don't know the current total cost.
-          // However, we can use a raw SQL expression inside the helper if needed, but for simplicity, 
-          // redeeming pairs usually zeros out the position if it's the full amount. 
-          // Let's just deduct a proportional default cost: 5000. 
-          // A better approach is to reduce cost proportionally in the SQL statement. 
-          // I will handle that in updatePosition or just pass 0 for now so avg price shifts slightly (which is fine on redeem).
-          await updatePosition(db, payload.user, payload.market_id, -amount, -amount, -(amount * 5000), -(amount * 5000));
-
-          logger.info(`Shares redeemed for market ${payload.market_id}: -${amount}`);
+          logger.info(`Shares burned for market ${payload.market_id}: -${amount}`);
           break;
         }
-        
+
+        case 'shares_transferred': {
+          const yesAmount = Number(payload.yes_amount);
+          const noAmount = Number(payload.no_amount);
+          logger.info(`Shares transferred market=${payload.market_id}: ${payload.from} → ${payload.to} (YES=${yesAmount}, NO=${noAmount})`);
+          break;
+        }
         case 'winnings_claimed': {
-          // You might track payouts somewhere, but for now we just log it
-          // totalShares are not decremented here typically, or if they are, it's tracked in a separate `claimed` table
           logger.info(`Winnings claimed for market ${payload.market_id} by ${payload.user}: ${payload.winning_shares} shares -> ${payload.payout} payout`);
+          break;
+        }
+
+        case 'position_updated': {
+          const { updatePositionFromEvent } = await import('./positions');
+          await updatePositionFromEvent(db, payload, event.timestamp);
           break;
         }
       }
