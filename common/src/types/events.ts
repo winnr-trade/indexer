@@ -73,3 +73,12 @@ export type MarketEventPayload =
   | SharesTransferredPayload
   | WinningsClaimedPayload
   | PositionUpdatedPayload;
+
+export interface NoteEventPayload {
+  kind: 'CreateAccount' | 'Deposit' | 'Withdraw' | string;
+  commitment: string;
+  nullifier: string;
+  amount: string | number;
+  memo: number[] | string;
+}
+

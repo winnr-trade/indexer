@@ -3,6 +3,7 @@ import { EventSchema } from '@winnr-trade/common';
 import { processMarketEvents } from './market';
 import { processOrderbookEvents } from './orderbook';
 import { processTradeEvents } from './trades';
+import { processNoteEvents } from './notes';
 import { logger } from '../logger';
 import { indexerState } from '@winnr-trade/common';
 
@@ -33,6 +34,18 @@ export class EventProcessor {
       if (tradeEvents.length > 0) {
         logger.debug(`Dispatching ${tradeEvents.length} trade events to handler`);
         await processTradeEvents(tx, tradeEvents);
+      }
+
+      const noteEvents = events.filter((e) => 
+        e.module.toLowerCase() === 'note' || 
+        e.module.toLowerCase() === 'notes' || 
+        e.key.toLowerCase() === 'note' ||
+        (e.value as any)?.type?.toLowerCase() === 'note'
+      );
+      
+      if (noteEvents.length > 0) {
+        logger.debug(`Dispatching ${noteEvents.length} note events to handler`);
+        await processNoteEvents(tx, noteEvents);
       }
 
       // Update the indexer state with the latest processed event
