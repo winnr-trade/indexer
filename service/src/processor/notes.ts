@@ -57,6 +57,7 @@ export async function processNoteEvents(
       const commitment = String(noteData.commitment);
       const nullifier = String(noteData.nullifier);
       const amount = Number(noteData.amount);
+      const leaf_index = Number(noteData.leaf_index);
       const memo = formatMemo(noteData.memo);
       
       await db.insert(notes).values({
@@ -64,12 +65,13 @@ export async function processNoteEvents(
         commitment,
         nullifier,
         amount,
+        leaf_index,
         memo,
         timestamp: event.timestamp,
         tx_hash: event.txHash,
       });
       
-      logger.info(`Note indexed: kind=${kind} commitment=${commitment} nullifier=${nullifier} amount=${amount}`);
+      logger.info(`Note indexed: kind=${kind} commitment=${commitment} nullifier=${nullifier} amount=${amount} leaf_index=${leaf_index}`);
     } catch (err) {
       logger.error(`Failed to process note event.`, err);
     }

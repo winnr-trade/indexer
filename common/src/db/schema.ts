@@ -86,6 +86,7 @@ export const notes = pgTable('notes', {
   commitment: text('commitment').notNull(),
   nullifier: text('nullifier').notNull(),
   amount: bigint('amount', { mode: 'number' }).notNull(),
+  leaf_index: bigint('leaf_index', { mode: 'number' }).notNull(),
   memo: text('memo').notNull(),
   timestamp: bigint('timestamp', { mode: 'number' }).notNull(),
   tx_hash: text('tx_hash').notNull(),

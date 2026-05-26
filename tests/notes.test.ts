@@ -20,7 +20,14 @@ describe("processNoteEvents", () => {
     };
   });
 
-  const createEvent = (kind: any, memo: any, commitment = "0xabc", nullifier = "0x123", amount = 100): EventSchema => ({
+  const createEvent = (
+    kind: any,
+    memo: any,
+    commitment = "0xabc",
+    nullifier = "0x123",
+    amount = 100,
+    leaf_index = 42
+  ): EventSchema => ({
     number: 1,
     key: "Note",
     module: "Note",
@@ -32,6 +39,7 @@ describe("processNoteEvents", () => {
         commitment,
         nullifier,
         amount: amount.toString(),
+        leaf_index: leaf_index.toString(),
         memo
       }
     }
@@ -47,6 +55,7 @@ describe("processNoteEvents", () => {
     expect(note.commitment).toBe("0xabc");
     expect(note.nullifier).toBe("0x123");
     expect(note.amount).toBe(100);
+    expect(note.leaf_index).toBe(42);
     expect(typeof note.memo).toBe("string");
     expect(note.memo).toBe("0x010203");
     expect(note.timestamp).toBe(1715000000000);
@@ -54,22 +63,24 @@ describe("processNoteEvents", () => {
   });
 
   it("successfully indexes a Deposit note with hex memo", async () => {
-    const event = createEvent("Deposit", "0x0a0b0c");
+    const event = createEvent("Deposit", "0x0a0b0c", "0xabc", "0x123", 100, 100);
     await processNoteEvents(dbMock, [event]);
 
     expect(insertedNotes.length).toBe(1);
     const note = insertedNotes[0];
     expect(note.kind).toBe("deposit");
+    expect(note.leaf_index).toBe(100);
     expect(note.memo).toBe("0x0a0b0c");
   });
 
   it("successfully indexes a Withdraw note with string memo", async () => {
-    const event = createEvent("Withdraw", "hello");
+    const event = createEvent("Withdraw", "hello", "0xabc", "0x123", 100, 0);
     await processNoteEvents(dbMock, [event]);
 
     expect(insertedNotes.length).toBe(1);
     const note = insertedNotes[0];
     expect(note.kind).toBe("withdraw");
+    expect(note.leaf_index).toBe(0);
     expect(note.memo).toBe("0x68656c6c6f"); // "hello" in hex
   });
 
@@ -80,6 +91,7 @@ describe("processNoteEvents", () => {
     expect(insertedNotes.length).toBe(1);
     const note = insertedNotes[0];
     expect(note.kind).toBe("create_account");
+    expect(note.leaf_index).toBe(42);
   });
 
   it("handles flat payload structures (no nested 'Note' wrapper)", async () => {
@@ -94,6 +106,7 @@ describe("processNoteEvents", () => {
         commitment: "0xdef",
         nullifier: "0x456",
         amount: "500",
+        leaf_index: "999",
         memo: "world"
       }
     };
@@ -104,6 +117,7 @@ describe("processNoteEvents", () => {
     expect(note.kind).toBe("deposit");
     expect(note.commitment).toBe("0xdef");
     expect(note.amount).toBe(500);
+    expect(note.leaf_index).toBe(999);
     expect(note.memo).toBe("0x776f726c64"); // "world" in hex
   });
 });

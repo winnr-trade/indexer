@@ -79,6 +79,7 @@ export interface NoteEventPayload {
   commitment: string;
   nullifier: string;
   amount: string | number;
+  leaf_index: string | number;
   memo: number[] | string;
 }
 

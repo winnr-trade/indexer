@@ -46,6 +46,37 @@ notesRouter.get('/', zValidator('query', z.object({
   }
 });
 
+// GET /api/v1/notes/leaves - Fetch only commitment and leaf_index sorted by leaf_index
+notesRouter.get('/leaves', zValidator('query', z.object({
+  page: z.coerce.number().min(0).default(0),
+  limit: z.coerce.number().min(1).max(5000).default(1000),
+})), async (c) => {
+  const { page, limit } = c.req.valid('query');
+  const offset = page * limit;
+
+  try {
+    const data = await db.inner.select({
+      commitment: notes.commitment,
+      leaf_index: notes.leaf_index,
+    })
+    .from(notes)
+    .orderBy(notes.leaf_index)
+    .limit(limit)
+    .offset(offset);
+
+    return c.json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error('Failed to fetch tree leaves:', error);
+    return c.json({
+      success: false,
+      error: 'Internal Server Error',
+    }, 500);
+  }
+});
+
 // GET /api/v1/notes/commitment/:commitment - Fetch single note by commitment
 notesRouter.get('/commitment/:commitment', async (c) => {
   const commitment = c.req.param('commitment');
