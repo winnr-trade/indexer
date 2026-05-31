@@ -9,7 +9,6 @@ export type EventSchema = {
   value: Record<string, unknown>;
   module: string;
   txHash: string;
-  timestamp: number;
 };
 
 export type Database<T> = {

@@ -3,18 +3,19 @@ import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { db } from '../db';
 import { notes } from '@winnr-trade/common';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, gte, asc } from 'drizzle-orm';
 
 export const notesRouter = new Hono();
 
 // GET /api/v1/notes - List notes with filters
 notesRouter.get('/', zValidator('query', z.object({
-  kind: z.enum(['create_account', 'deposit', 'withdraw']).optional(),
+  kind: z.enum(['register_account', 'deposit', 'withdraw']).optional(),
   commitment: z.string().optional(),
+  from_index: z.coerce.number().min(0).optional(),
   page: z.coerce.number().min(0).default(0),
   limit: z.coerce.number().min(1).max(100).default(50),
 })), async (c) => {
-  const { kind, commitment, page, limit } = c.req.valid('query');
+  const { kind, commitment, from_index, page, limit } = c.req.valid('query');
   const offset = page * limit;
 
   try {
@@ -25,11 +26,16 @@ notesRouter.get('/', zValidator('query', z.object({
     if (commitment) {
       conditions.push(eq(notes.commitment, commitment));
     }
+    if (from_index !== undefined) {
+      conditions.push(gte(notes.leaf_index, from_index));
+    }
+
+    const orderBy = from_index !== undefined ? asc(notes.leaf_index) : desc(notes.timestamp);
 
     const data = await db.inner.select()
       .from(notes)
       .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(desc(notes.timestamp))
+      .orderBy(orderBy)
       .limit(limit)
       .offset(offset);
 

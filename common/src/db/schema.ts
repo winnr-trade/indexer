@@ -78,7 +78,7 @@ export const positions = pgTable('positions', {
   primaryKey({ columns: [t.user_address, t.market_id] }),
 ]);
 
-export const noteKindEnum = pgEnum('note_kind', ['create_account', 'deposit', 'withdraw']);
+export const noteKindEnum = pgEnum('note_kind', ['register_account', 'deposit', 'withdraw']);
 
 export const notes = pgTable('notes', {
   id: serial('id').primaryKey(),
@@ -93,4 +93,17 @@ export const notes = pgTable('notes', {
 }, (table) => [
   index('notes_commitment_idx').on(table.commitment),
   index('notes_nullifier_idx').on(table.nullifier),
+]);
+
+export const stealthOrderMemos = pgTable('stealth_order_memos', {
+  id: serial('id').primaryKey(),
+  commitment: text('commitment').notNull(),
+  stealth_address: text('stealth_address').notNull(),
+  detection_tag: text('detection_tag').notNull(),
+  timestamp: bigint('timestamp', { mode: 'number' }).notNull(),
+  tx_hash: text('tx_hash').notNull(),
+}, (table) => [
+  index('stealth_order_memos_stealth_address_idx').on(table.stealth_address),
+  index('stealth_order_memos_detection_tag_idx').on(table.detection_tag),
+  index('stealth_order_memos_commitment_idx').on(table.commitment),
 ]);

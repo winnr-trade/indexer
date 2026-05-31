@@ -2,50 +2,49 @@ import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { EventSchema } from '@winnr-trade/common';
 import { processMarketEvents } from './market';
 import { processOrderbookEvents } from './orderbook';
-import { processTradeEvents } from './trades';
-import { processNoteEvents } from './notes';
+import { processShieldedPoolEvents } from './shieldedPool';
 import { logger } from '../logger';
 import { indexerState } from '@winnr-trade/common';
+import { EventModule } from '../configs/constants';
 
 export class EventProcessor {
-  constructor(private readonly db: NodePgDatabase) {}
+  constructor(private readonly db: NodePgDatabase) { }
+
+  async dispatchModuleEvents(tx: any, module: EventModule, events: EventSchema[]) {
+    logger.debug(`Dispatching ${events.length} ${module} module events`);
+    switch (module) {
+      case EventModule.MARKET:
+        await processMarketEvents(tx, events);
+        break;
+      case EventModule.ORDERBOOK:
+        await processOrderbookEvents(tx, events);
+        break;
+      case EventModule.SHIELDED_POOL:
+        await processShieldedPoolEvents(tx, events);
+        break;
+      default:
+        throw new Error(`Unknown module: ${module}`);
+    }
+  }
 
   async process(events: EventSchema[]) {
-    if (events.length === 0) return;
+    if (events.length === 0) { return; }
+    
+    const marketEvents = events.filter((e) => e.module === EventModule.MARKET);
+    const orderbookEvents = events.filter((e) => e.module === EventModule.ORDERBOOK);
+    const shieldedPoolEvents = events.filter((e) => e.module === EventModule.SHIELDED_POOL);
 
     await this.db.transaction(async (tx) => {
-      const marketEvents = events.filter((e) => e.module === 'Market');
       if (marketEvents.length > 0) {
-        logger.debug(`Dispatching ${marketEvents.length} market events to handler`);
-        await processMarketEvents(tx, marketEvents);
+        await this.dispatchModuleEvents(tx, EventModule.MARKET, marketEvents);
       }
 
-      const orderbookEvents = events.filter((e) => e.module === 'Orderbook');
       if (orderbookEvents.length > 0) {
-        logger.debug(`Dispatching ${orderbookEvents.length} orderbook events to handler`);
-        await processOrderbookEvents(tx, orderbookEvents);
+        await this.dispatchModuleEvents(tx, EventModule.ORDERBOOK, orderbookEvents);
       }
 
-      const tradeEvents = events.filter((e) => 
-        e.module === 'Orderbook' && 
-        (e.key.includes('Trade') || (e.value as any)?.type?.toLowerCase() === 'trade')
-      );
-      
-      if (tradeEvents.length > 0) {
-        logger.debug(`Dispatching ${tradeEvents.length} trade events to handler`);
-        await processTradeEvents(tx, tradeEvents);
-      }
-
-      const noteEvents = events.filter((e) => 
-        e.module.toLowerCase() === 'note' || 
-        e.module.toLowerCase() === 'notes' || 
-        e.key.toLowerCase() === 'note' ||
-        (e.value as any)?.type?.toLowerCase() === 'note'
-      );
-      
-      if (noteEvents.length > 0) {
-        logger.debug(`Dispatching ${noteEvents.length} note events to handler`);
-        await processNoteEvents(tx, noteEvents);
+      if (shieldedPoolEvents.length > 0) {
+        await this.dispatchModuleEvents(tx, EventModule.SHIELDED_POOL, shieldedPoolEvents);
       }
 
       // Update the indexer state with the latest processed event
