@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { db } from '../db';
-import { markets, bookUpdates, trades } from '@winnr-trade/common';
-import { eq, desc, sql, and, gte, lte } from 'drizzle-orm';
+import { markets, bookUpdates, trades, positions } from '@winnr-trade/common';
+import { eq, desc, sql, and, gte, lte, gt } from 'drizzle-orm';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 
@@ -111,5 +111,42 @@ marketsRouter.get('/:id/trades', readOnlyCache, zValidator('query', z.object({
   return c.json({
     success: true,
     data,
+  });
+});
+
+marketsRouter.get('/:id/holders', readOnlyCache, zValidator('query', z.object({
+  limit: z.coerce.number().min(1).max(100).default(10)
+})), async (c) => {
+  const idValue = Number(c.req.param('id'));
+  const { limit } = c.req.valid('query');
+
+  if (isNaN(idValue)) {
+    return c.json({ success: false, error: 'Invalid Market ID' }, 400);
+  }
+
+  const yesHolders = await db.inner.select({
+    user_address: positions.user_address,
+    quantity: positions.quantity_yes,
+  })
+  .from(positions)
+  .where(and(eq(positions.market_id, idValue as any), gt(positions.quantity_yes, 0)))
+  .orderBy(desc(positions.quantity_yes))
+  .limit(limit);
+
+  const noHolders = await db.inner.select({
+    user_address: positions.user_address,
+    quantity: positions.quantity_no,
+  })
+  .from(positions)
+  .where(and(eq(positions.market_id, idValue as any), gt(positions.quantity_no, 0)))
+  .orderBy(desc(positions.quantity_no))
+  .limit(limit);
+
+  return c.json({
+    success: true,
+    data: {
+      yesHolders,
+      noHolders
+    }
   });
 });
