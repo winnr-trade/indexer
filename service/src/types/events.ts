@@ -6,6 +6,7 @@ export interface MarketCreatedPayload {
   collateral_token: string;
   resolution_time: number;
   resolver: string;
+  timestamp: string | number;
 }
 
 export interface MarketStatusChangedPayload {
@@ -13,6 +14,7 @@ export interface MarketStatusChangedPayload {
   market_id: number;
   old_status: string;
   new_status: string;
+  timestamp: string | number;
 }
 
 export interface MarketResolvedPayload {
@@ -20,6 +22,7 @@ export interface MarketResolvedPayload {
   market_id: number;
   outcome: string;
   resolver: string;
+  timestamp: string | number;
 }
 
 export interface SharesMintedPayload {
@@ -27,6 +30,7 @@ export interface SharesMintedPayload {
   market_id: number;
   user: string;
   amount: number;
+  timestamp: string | number;
 }
 
 export interface SharesBurnedPayload {
@@ -34,6 +38,7 @@ export interface SharesBurnedPayload {
   market_id: number;
   user: string;
   amount: number;
+  timestamp: string | number;
 }
 
 export interface SharesTransferredPayload {
@@ -43,6 +48,7 @@ export interface SharesTransferredPayload {
   to: string;
   yes_amount: number;
   no_amount: number;
+  timestamp: string | number;
 }
 
 export interface WinningsClaimedPayload {
@@ -51,6 +57,7 @@ export interface WinningsClaimedPayload {
   user: string;
   winning_shares: number;
   payout: number;
+  timestamp: string | number;
 }
 
 export interface PositionUpdatedPayload {
@@ -62,6 +69,7 @@ export interface PositionUpdatedPayload {
   cost_yes_added: string; // Amount as string
   cost_no_added: string;  // Amount as string
   update_source: string;
+  timestamp: string | number;
 }
 
 export type MarketEventPayload =
@@ -73,3 +81,33 @@ export type MarketEventPayload =
   | SharesTransferredPayload
   | WinningsClaimedPayload
   | PositionUpdatedPayload;
+
+export interface NoteEventPayload {
+  kind: 'register_account' | 'deposit' | 'withdraw';
+  commitment: string;
+  nullifier: string;
+  amount: string | number;
+  leaf_index: string | number;
+  memo: number[] | string;
+  timestamp: string | number;
+}
+
+export interface TradeEventPayload {
+  type: "Trade" | "trade";
+  market_id: string | number;
+  maker_order_id: string | number;
+  taker_order_id: string | number;
+  price: string | number;
+  quantity: string | number;
+  buyer: string;
+  seller: string;
+  settlement_kind: string;
+  timestamp: string | number;
+}
+
+export interface StealthOrderMemoPayload {
+  commitment: string;
+  stealth_address: string;
+  detection_tag: string;
+  timestamp: string | number;
+}

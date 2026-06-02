@@ -26,7 +26,7 @@ export class Indexer {
   private eventProcessor: EventProcessor;
 
   constructor(opts: IndexerOpts) {
-    this.pollIntervalMs = opts.pollIntervalMs ?? 100;
+    this.pollIntervalMs = opts.pollIntervalMs ?? 500;
     this.pollPageSize = opts.pollPageSize ?? 75;
     this.healthcheckIntervalMs = opts.healthcheckIntervalMs ?? 5000;
     this.database = opts.database;
@@ -95,15 +95,13 @@ export class Indexer {
         "page[cursor]": String(currentEventNum),
         "page[size]": this.pollPageSize,
       });
-      
+
       return response.items.map((event) => ({
-        // ...event,
         number: event.number,
         key: event.key,
         value: event.value,
         module: event.module.name,
         txHash: event.tx_hash,
-        timestamp: (event as any).timestamp || (event as any).block_timestamp || Date.now(),
       })) as EventSchema[];
     } catch (err) {
       this.setAndCheckHealth(err);

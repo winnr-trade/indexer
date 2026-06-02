@@ -1,5 +1,6 @@
 import { eq, and, sql } from 'drizzle-orm';
-import { positions, PositionUpdatedPayload } from '@winnr-trade/common';
+import { positions } from '@winnr-trade/common';
+import type { PositionUpdatedPayload } from '../types/events';
 import { logger } from '../logger';
 
 /**

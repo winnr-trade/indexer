@@ -6,7 +6,8 @@ import {
   pgEnum,
   serial,
   jsonb,
-  primaryKey
+  primaryKey,
+  index
 } from 'drizzle-orm/pg-core';
 
 export const marketStatusEnum = pgEnum('market_status', ['active', 'halted', 'resolution_pending', 'resolved']);
@@ -75,4 +76,34 @@ export const positions = pgTable('positions', {
   updated_at: bigint('updated_at', { mode: 'number' }).notNull(),
 }, (t) => [
   primaryKey({ columns: [t.user_address, t.market_id] }),
+]);
+
+export const noteKindEnum = pgEnum('note_kind', ['register_account', 'deposit', 'withdraw']);
+
+export const notes = pgTable('notes', {
+  id: serial('id').primaryKey(),
+  kind: noteKindEnum('kind').notNull(),
+  commitment: text('commitment').notNull(),
+  nullifier: text('nullifier').notNull(),
+  amount: bigint('amount', { mode: 'number' }).notNull(),
+  leaf_index: bigint('leaf_index', { mode: 'number' }).notNull(),
+  memo: text('memo').notNull(),
+  timestamp: bigint('timestamp', { mode: 'number' }).notNull(),
+  tx_hash: text('tx_hash').notNull(),
+}, (table) => [
+  index('notes_commitment_idx').on(table.commitment),
+  index('notes_nullifier_idx').on(table.nullifier),
+]);
+
+export const stealthOrderMemos = pgTable('stealth_order_memos', {
+  id: serial('id').primaryKey(),
+  commitment: text('commitment').notNull(),
+  stealth_address: text('stealth_address').notNull(),
+  detection_tag: text('detection_tag').notNull(),
+  timestamp: bigint('timestamp', { mode: 'number' }).notNull(),
+  tx_hash: text('tx_hash').notNull(),
+}, (table) => [
+  index('stealth_order_memos_stealth_address_idx').on(table.stealth_address),
+  index('stealth_order_memos_detection_tag_idx').on(table.detection_tag),
+  index('stealth_order_memos_commitment_idx').on(table.commitment),
 ]);

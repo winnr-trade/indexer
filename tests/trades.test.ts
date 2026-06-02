@@ -1,5 +1,5 @@
 import { describe, expect, it, mock, beforeEach } from "bun:test";
-import { processTradeEvents } from "../service/src/processor/trades";
+import { processOrderbookEvents } from "../service/src/processor/orderbook";
 import { EventSchema } from "@winnr-trade/common";
 
 // Mock sql tagged template
@@ -46,10 +46,9 @@ describe("processTradeEvents", () => {
 
   const createEvent = (price: number, quantity: number, settlementKind: string): EventSchema => ({
     number: 1,
-    key: "Trade",
-    module: "market",
+    key: "OrderbookModule/Trade",
+    module: "Orderbook",
     txHash: "0x123",
-    timestamp: 1715000000000,
     value: {
       type: "Trade",
       market_id: "1",
@@ -66,7 +65,7 @@ describe("processTradeEvents", () => {
 
   it("mint_pair trade at any price adds shares quantity and collateral quantity", async () => {
     const events = [createEvent(6000, 50, "mint_pair")];
-    await processTradeEvents(dbMock, events);
+    await processOrderbookEvents(dbMock, events);
 
     expect(updatedMarkets.length).toBe(1);
     const update = updatedMarkets[0];
@@ -79,7 +78,7 @@ describe("processTradeEvents", () => {
   it("transfer_yes uses price-side notional", async () => {
     // price = 6000, qty = 50 -> notional = 6000 * 50 / 10000 = 30
     const events = [createEvent(6000, 50, "transfer_yes")];
-    await processTradeEvents(dbMock, events);
+    await processOrderbookEvents(dbMock, events);
 
     const update = updatedMarkets[0];
     expect(update.total_volume).toBe(30 * 1000000);
@@ -88,7 +87,7 @@ describe("processTradeEvents", () => {
   it("transfer_no uses complement-side notional", async () => {
     // price = 6000, qty = 50 -> no_notional = (10000 - 6000) * 50 / 10000 = 20
     const events = [createEvent(6000, 50, "transfer_no")];
-    await processTradeEvents(dbMock, events);
+    await processOrderbookEvents(dbMock, events);
 
     const update = updatedMarkets[0];
     expect(update.total_volume).toBe(20 * 1000000);
@@ -96,7 +95,7 @@ describe("processTradeEvents", () => {
 
   it("merge_pair contributes zero to collateral volume", async () => {
     const events = [createEvent(6000, 50, "merge_pair")];
-    await processTradeEvents(dbMock, events);
+    await processOrderbookEvents(dbMock, events);
 
     const update = updatedMarkets[0];
     expect(update.total_volume).toBe(0);
@@ -106,7 +105,7 @@ describe("processTradeEvents", () => {
 
   it("base unit conversion uses token decimals correctly", async () => {
     const events = [createEvent(5000, 10, "mint_pair")];
-    await processTradeEvents(dbMock, events);
+    await processOrderbookEvents(dbMock, events);
 
     const update = updatedMarkets[0];
     expect(update.total_volume).toBe(10 * 1000000);
